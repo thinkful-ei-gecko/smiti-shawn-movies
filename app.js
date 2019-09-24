@@ -1,39 +1,34 @@
 const express = require("express");
 const morgan = require("morgan");
+const helmet = require('helmet');
+const cors = require('cors');
+require('dotenv').config()
 const app = express();
+
 const movies = require("./movies.js");
-app.use(morgan("common"));
 
-const validGenre = [
-  `Drama`,
-  `Romantic`,
-  `Comedy`,
-  `Spy`,
-  `Crime`,
-  `Thriller`,
-  `Adventure`,
-  `Documentary`,
-  `Horror`,
-  `Action`,
-  `Biography`,
-  `History`,
-  `Fantasy`,
-  `War`
-];
+app.use(morgan('dev'));
+app.use(helmet());
+app.use(cors());
 
-const validCounty = [
-  `United States`,
-  `Italy`,
-  `Great Britain`,
-  `Japan`,
-  `France`,
-  `Germany`,
-  `Spain`
-];
+//state = initialState;
 
-function handleGetTypes(req, res) {
-  res.json(validGenre);
-}
+// performFetch = () =>
+//     fetch('http://localhost:8000/movie', {
+//     headers: {
+//         Authorization: `Bearer ${process.env.apiToken}`,
+//     },
+//   });
+
+
+app.use(function validateBearerToken(req, res, next) {
+  const apiToken = process.env.apiToken
+  const authToken = req.get('Authorization')
+  if (!authToken || authToken.split(' ')[1] !== apiToken) {
+    return res.status(401).json({ error: 'Unauthorized request' })
+  }
+  next()
+ })
 
 app.get("/movie", (req, res) => {
   const { genre = "", country, avg_vote } = req.query;
@@ -45,8 +40,9 @@ app.get("/movie", (req, res) => {
 
     console.log(results);
 
-    res.status(200).send(results);
+    res.status(200).json(results);
   }
+  
 
   if (country) {
     let results = movies.filter(movie =>
@@ -55,7 +51,7 @@ app.get("/movie", (req, res) => {
 
     console.log(results);
 
-    res.status(200).send(results);
+    res.status(200).json(results);
   }
 
   if (avg_vote) {
@@ -66,11 +62,9 @@ app.get("/movie", (req, res) => {
     console.log(results);
     console.log(req.query);
 
-    res.status(200).send(results);
+    res.status(200).json(results);
   }
 });
-
-app.get("/types", handleGetTypes);
 
 app.listen(8000, () => {
   console.log("Server started on PORT 8000");
