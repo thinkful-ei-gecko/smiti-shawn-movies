@@ -1,13 +1,14 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
-const helmet = require('helmet');
-const cors = require('cors');
-require('dotenv').config()
-const app = express();
-
+const cors = require("cors");
+const helmet = require("helmet");
 const movies = require("./movies.js");
 
-app.use(morgan('dev'));
+const app = express();
+
+
+app.use(morgan("dev"));
 app.use(helmet());
 app.use(cors());
 
@@ -20,15 +21,21 @@ app.use(cors());
 //     },
 //   });
 
-
 app.use(function validateBearerToken(req, res, next) {
-  const apiToken = process.env.apiToken
-  const authToken = req.get('Authorization')
-  if (!authToken || authToken.split(' ')[1] !== apiToken) {
-    return res.status(401).json({ error: 'Unauthorized request' })
+    //stored "password".  Belongs to the server
+  const apiToken = process.env.apiToken;
+  //gets a value from request header by key "Authorization".  Provided by client/user
+  const authToken = req.get("Authorization");
+
+    console.log('authToken');
+//JSON Web Token (JWT) format requires the use of split.  Format below.
+// Authorization: Bearer <token>
+  if (!authToken || authToken.split(" ")[1] !== apiToken) {
+    return res.status(401).json({ error: "Unauthorized request" });
   }
-  next()
- })
+
+  next();
+});
 
 app.get("/movie", (req, res) => {
   const { genre = "", country, avg_vote } = req.query;
@@ -42,7 +49,6 @@ app.get("/movie", (req, res) => {
 
     res.status(200).json(results);
   }
-  
 
   if (country) {
     let results = movies.filter(movie =>
