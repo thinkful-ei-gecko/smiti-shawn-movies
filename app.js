@@ -1,77 +1,53 @@
-require("dotenv").config();
-const express = require("express");
-const morgan = require("morgan");
-const cors = require("cors");
-const helmet = require("helmet");
-const movies = require("./movies.js");
+require('dotenv').config()
+const express = require('express')
+const morgan = require('morgan')
+const cors = require('cors')
+const helmet = require('helmet')
+const MOVIES = require('./movies-data.js')
 
-const app = express();
+const app = express()
 
-
-app.use(morgan("dev"));
-app.use(helmet());
-app.use(cors());
-
-//state = initialState;
-
-// performFetch = () =>
-//     fetch('http://localhost:8000/movie', {
-//     headers: {
-//         Authorization: `Bearer ${process.env.apiToken}`,
-//     },
-//   });
+app.use(morgan('dev'))
+app.use(cors())
+app.use(helmet())
 
 app.use(function validateBearerToken(req, res, next) {
-    //stored "password".  Belongs to the server
-  const apiToken = process.env.apiToken;
-  //gets a value from request header by key "Authorization".  Provided by client/user
-  const authToken = req.get("Authorization");
+  const apiToken = process.env.API_TOKEN
+  const authToken = req.get('Authorization')
+  console.log(apiToken, authToken);
+  if (!authToken || authToken.split(' ')[1] !== apiToken) {
+    return res.status(401).json({ error: 'Unauthorized request' })
+  }
+  next()
+})
 
-    console.log('authToken');
-//JSON Web Token (JWT) format requires the use of split.  Format below.
-// Authorization: Bearer <token>
-  if (!authToken || authToken.split(" ")[1] !== apiToken) {
-    return res.status(401).json({ error: "Unauthorized request" });
+app.get('/movie', function handleGetMovie(req, res) {
+  let response = MOVIES;
+
+  if (req.query.genre) {
+    response = response.filter(movie =>
+      movie.genre.toLowerCase().includes(req.query.genre.toLowerCase())
+    )
   }
 
-  next();
-});
-
-app.get("/movie", (req, res) => {
-  const { genre = "", country, avg_vote } = req.query;
-
-  if (genre) {
-    let results = movies.filter(movie =>
-      movie.genre.toLowerCase().includes(genre.toLowerCase().trim())
-    );
-
-    console.log(results);
-
-    res.status(200).json(results);
+  if (req.query.country) {
+    response = response.filter(movie =>
+      movie.country.toLowerCase().includes(req.query.country.toLowerCase())
+    )
   }
 
-  if (country) {
-    let results = movies.filter(movie =>
-      movie.country.toLowerCase().includes(country.toLowerCase().trim())
-    );
-
-    console.log(results);
-
-    res.status(200).json(results);
+  if (req.query.avg_vote) {
+    response = response.filter(movie =>
+      Number(movie.avg_vote) >= Number(req.query.avg_vote)
+    )
   }
 
-  if (avg_vote) {
-    let results = movies.filter(
-      movie => movie.avg_vote >= parseFloat(req.query.avg_vote)
-    );
+  res.json(response)
+})
 
-    console.log(results);
-    console.log(req.query);
+const PORT = 8000
 
-    res.status(200).json(results);
-  }
-});
+app.listen(PORT, () => {
+  console.log(`Server listening at http://localhost:${PORT}`)
+})
 
-app.listen(8000, () => {
-  console.log("Server started on PORT 8000");
-});
